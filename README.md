@@ -13,6 +13,6 @@ Platforms are generated randomly as you climb
 Improvements:
 - It would be nice if platforms didn't overlap so much
 - It would be nice if there wasn't a sometimes un-crossable chasm between platforms
-- that might be a feature or a bug, not sure
+    - that might be a feature or a bug, not sure
 - It would be nice to have a score on screen as you climbed
 - It would be nice to 'bounce' off the side of platforms (at the moment you 'climb' up)
