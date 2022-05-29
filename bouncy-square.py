@@ -24,9 +24,9 @@ PLATFORM_LIST = [(0, HEIGHT - 40, WIDTH, 40),
                 (175, 100, 50, 20)]
 # Player properties
 PLAYER_ACC = 0.5
-PLAYER_FRICTION = -0.12
+PLAYER_FRICTION = 0.9
 PLAYER_GRAV = 0.8
-PLAYER_JUMP = 20
+PLAYER_JUMP = 15
 
 class Game:
     def __init__(self):
@@ -36,8 +36,7 @@ class Game:
         self.clock = pg.time.Clock()
         pg.display.set_caption(TITLE)
         self.player = pg.sprite.Group()
-        p = Player()
-        self.player.add(p)
+        self.player.add(Player())
         self.platforms = pg.sprite.Group()
         self.show_start_screen()
 
@@ -54,7 +53,7 @@ class Game:
         self.player.update(self.platforms)
         for p in self.player:
             if p.rect.top <= HEIGHT / 4:
-                p.pos.y += abs(p.vel.y)
+                p.rect.center.y += abs(p.vel.y) # doesn't work with tuples...
                 for plat in self.platforms:
                     plat.rect.y += abs(p.vel.y)
                     if plat.rect.top >= HEIGHT:
@@ -135,38 +134,53 @@ class Player(pg.sprite.Sprite):
 
     def reset(self):
         self.rect.center = (WIDTH / 2, HEIGHT / 2)
-        self.pos = vec(WIDTH / 2, HEIGHT / 2)
-        self.vel = vec(0,0)
-        self.accel = vec(0,0)
+        self.vel = vec(0, 0)
+        self.accel = vec(0, PLAYER_GRAV)
         
     def update(self, platforms):
+        self.handle_input(platforms)
+        self.move(platforms)
+        self.wrap()
+
+    def wrap(self):
+        if self.rect.right > WIDTH:
+            self.rect.left = 0
+        if self.rect.left < 0:
+            self.rect.right = WIDTH
+
+    def handle_input(self, platforms):
         keys = pg.key.get_pressed()
         if keys[pg.K_RIGHT]:
-            self.accel.x += PLAYER_ACC
-        elif keys[pg.K_LEFT]:
-            self.accel.x -= PLAYER_ACC
+            self.vel.x = PLAYER_ACC
+        if keys[pg.K_LEFT]:
+            self.vel.x = PLAYER_ACC * -1
         if keys[pg.K_SPACE]:
             self.jump(platforms)
-        self.accel.x += self.vel.x * PLAYER_FRICTION
-        self.accel.y = PLAYER_GRAV
+
+    def move(self, platforms):
+        self.accel.x -= self.vel.x * PLAYER_FRICTION
         self.vel += self.accel
-        self.pos += self.vel
-        self.rect.midbottom = self.pos
-        if self.vel.y > 0:
-            hits = pg.sprite.spritecollide(self, platforms, False)
-            if hits:
-                self.pos.y = hits[0].rect.top
-                self.vel.y = 0
+        self.platform_collide(platforms)
+        print('vel', self.vel, 'accl', self.accel)
+        if abs(self.vel.x) < 0.01:
+            self.vel.x = 0
+        self.rect.center += self.vel
         self.accel.x = 0
-        if self.pos.x > WIDTH:
-            self.pos.x = 0
-        if self.pos.x < 0:
-            self.pos.x = WIDTH
+
+    def platform_collide(self, platforms):
+        # check falling
+        self.rect.y += 1
+        hits = pg.sprite.spritecollide(self, platforms, False)
+        self.rect.y -= 1
+        if self.vel.y > 0:
+            if hits:
+                self.rect.bottom = hits[0].rect.top
+                self.vel.y = 0
 
     def jump(self, platforms):
-        self.rect.x += 1
+        self.rect.y += 1
         hits = pg.sprite.spritecollide(self, platforms, False)
-        self.rect.x -= 1
+        self.rect.y -= 1
         if hits:
             self.vel.y = -PLAYER_JUMP
 
